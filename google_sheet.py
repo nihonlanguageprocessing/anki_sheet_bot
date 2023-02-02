@@ -68,8 +68,7 @@ def get_rangeName(service, spreadsheet_id, sheet_id, range_) -> str:
 if __name__ == '__main__':
     # Pass: spreadsheet_id, and range_name
     service = get_service()
+
     values = google_sheets(service, get_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk', 64971627, 'A2:B')
-    google_sheets(service, move_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk',64971627, 0, 'A2:B', values)
-
-
-    print(values)
+    if values:
+        google_sheets(service, move_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk',64971627, 0, 'A2:B', values)
