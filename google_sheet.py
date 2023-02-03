@@ -65,10 +65,24 @@ def get_rangeName(service, spreadsheet_id, sheet_id, range_) -> str:
     range_name = sheet_name + '!' + range_
     return range_name
 
+def get_header(service, spreadsheet_id, sheet_id) -> dict:
+    header = google_sheets(service, get_values, spreadsheet_id, sheet_id, 'A1:Z1')
+    if not header:
+        print('Missing header')
+    return header
+
 if __name__ == '__main__':
     # Pass: spreadsheet_id, and range_name
     service = get_service()
 
-    values = google_sheets(service, get_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk', 64971627, 'A2:B')
-    if values:
-        google_sheets(service, move_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk',64971627, 0, 'A2:B', values)
+    header = google_sheets(service, get_header, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk', 64971627)[0]
+    print(header)
+    range_ = 'A2:' + chr(len(header) + 64)
+    print(range_)
+    values = google_sheets(service, get_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk', 64971627, range_)
+    anki_params = []
+    if values and header:
+        google_sheets(service, move_values, '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk',64971627, 0, range_, values)
+        for value in values:
+            anki_params.append(dict(zip(header, values)))
+        print(anki_params)
