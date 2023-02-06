@@ -27,6 +27,9 @@ if __name__ == "__main__":
 
 
 '''
+(*.jpg *.png *.gif *.tiff *.svg *.tif *.jpeg "+ "*.mp3 *.ogg *.wav *.avi *.ogv *.mpg *.mpeg *.mov *.mp4 " + "*.mkv *.ogx *.ogv *.oga *.flv *.swf *.flac *.webp *.m4a)")
+'''
+'''
 {
     "action": "addNotes",
     "version": 6,
