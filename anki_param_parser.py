@@ -11,14 +11,16 @@ def core_parser(header):
     deck_name_idx = index_of("deckName", header)
     model_name_idx = index_of("modelName", header)
 
-def options_parser(header, note):
+def options_parser(header):
     params = ('allowDuplicate','duplicateScope'
               ,'deckName','checkChildren','checkAllModels')
 
-    allowDup_idx, dupScope_idx, deckName_idx, checkChil_idx, checkAllMod_idx = \
-            multi_param_idx_finder(header, params=params, start=1)
+    options_params_idx = multi_param_idx_finder(header, params=params, start=1)
+    return options_param_idx
 
+def options_getter(options_idx: tuple, note):
     options = {}
+    (allowDup_idx, dupScope_idx, deckName_idx, checkChil_idx, checkAllMod_idx) = options_idx
     if allowDup_idx:
         options[-1]["allowDuplicate"] = note[allowDup_idx]
     if dupScope_idx:
