@@ -11,7 +11,7 @@ def core_parser(header):
     deck_name_idx = index_of("deckName", header)
     model_name_idx = index_of("modelName", header)
 
-def options_idx_parser(header) -> list:
+def parse_options_idx(header) -> list:
     '''Returns idx for options params'''
     params = ('allowDuplicate','duplicateScope'
               ,'deckName','checkChildren','checkAllModels')
@@ -19,7 +19,7 @@ def options_idx_parser(header) -> list:
     options_idx = multi_param_idx_finder(header, params=params, start=1)
     return options_idx
 
-def options_getter(options_idx: list, note):
+def get_options(options_idx: list, note):
     '''Returns dictionary of options params and their values for a given note'''
     options = {}
     (allowDup_idx, dupScope_idx, deckName_idx, checkChil_idx, checkAllMod_idx) = options_idx
@@ -38,7 +38,7 @@ def options_getter(options_idx: list, note):
 
     return options
 
-def media_idx_parser(header) -> list:
+def parse_media_idx(header) -> list:
     '''Returns idx for media params. One list for each media item.'''
     start = 0
     medias_idx = []
@@ -70,27 +70,35 @@ def media_idx_parser(header) -> list:
 
     return medias_idx
 
-def media_getter(medias_idx: list, note) -> list:
+def get_media(medias_idx: list, note) -> list:
     '''Parse any media compenents of a header and single anki note into the
     correct dictionary form'''
     # Continues going through the header until all possible media components
     # have been exhausted.
-    for media in medias_idx:
-        # Gets idx for any other named parameters corresponding to this url
-        (url_idx, filename_idx, skipHash_idx, fields_idx) = media
+    medias = []
 
-        # Append a new dictionary and add corresponding note values
-        media.append({})
-        media[-1]['url'] = note[url_idx]
-        if filename_idx:
-            media[-1]["filename"] = note[filename_idx]
+    for media_idx in medias_idx:
+        media = {}
+        # Gets idx for any other named parameters corresponding to this url
+        (url_idx, filename_idx, skipHash_idx, fields_idx) = media_idx
+
+        # add corresponding not values to dict
+        media['url'] = note[url_idx]
+        media["filename"] = note[filename_idx]
+        type_ = get_media_type(media(media["filename"]))
         if skipHash_idx:
-            media[-1]["skipHash"] = note[skipHash_idx]
+            media["skipHash"] = note[skipHash_idx]
         if fields_idx:
-            media[-1]["fields"] = [field.strip() for field in note[fields_idx].split(DELIN)]
+            media["fields"] = [field.strip() for field in note[fields_idx].split(DELIN)]
+
+
+        # append dict to list of medias
+        medias.append({'type': type_, 'media': media})
 
     return media
 
+def get_media_type(file_name) -> str:
+    pass
 
 def multi_param_idx_finder(header: list, params: tuple, start:int=0, end:int=0) -> list:
     '''Finds idx of a tuple of params'''
@@ -127,5 +135,5 @@ if __name__ == "__main__":
 
     header, _, notes = google_sheets(service, get_anki_params, spreadsheet_id, sheet_id_from)
 
-    media_idx = media_idx_parser(header)
+    media_idx = parse_media_idx(header)
     print(media_idx)
