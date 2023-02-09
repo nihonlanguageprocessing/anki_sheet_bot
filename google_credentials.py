@@ -18,6 +18,5 @@ def get_credentials():
         SERVICE_ACCOUNT_FILE, scopes=SCOPES)
     return creds
 
-
 if __name__ == '__main__':
     get_credentials()
