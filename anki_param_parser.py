@@ -1,11 +1,15 @@
 from google_sheet import get_anki_params, google_sheets
 from google_service import get_service
+import os
 
 # TO DO
 # Get delin from .ini
 # Rewrite media_param_idx_finder to take a list of params
 
 DELIN = ','
+AUDIO= ('.mp3','.ogg','.wav','.avi','.ogv','.mpg','.mpeg','.mov','.mp4')
+MOVIE= ('.mkv','.ogx','.ogv','.oga','.flv','.swf','.flac','.webp','.m4a')
+PICTURE= ('.jpg','.png','.gif','.tiff','.svg','.tif','.jpeg')
 
 def core_parser(header):
     deck_name_idx = index_of("deckName", header)
@@ -85,7 +89,7 @@ def get_media(medias_idx: list, note) -> list:
         # add corresponding not values to dict
         media['url'] = note[url_idx]
         media["filename"] = note[filename_idx]
-        type_ = get_media_type(media(media["filename"]))
+        type_ = get_media_type(media["filename"])
         if skipHash_idx:
             media["skipHash"] = note[skipHash_idx]
         if fields_idx:
@@ -95,9 +99,16 @@ def get_media(medias_idx: list, note) -> list:
         # append dict to list of medias
         medias.append({'type': type_, 'media': media})
 
-    return media
+    return medias
 
 def get_media_type(file_name) -> str:
+    _, file_type = os.path.splitext(file_name)
+    if file_type in AUDIO:
+        return 'audio'
+    if file_type in MOVIE:
+        return 'movie'
+    if file_type in PICTURE:
+        return 'picture'
     pass
 
 def multi_param_idx_finder(header: list, params: tuple, start:int=0, end:int=0) -> list:
@@ -136,4 +147,5 @@ if __name__ == "__main__":
     header, _, notes = google_sheets(service, get_anki_params, spreadsheet_id, sheet_id_from)
 
     media_idx = parse_media_idx(header)
-    print(media_idx)
+    media = get_media(media_idx, notes[0])
+    print(media)
