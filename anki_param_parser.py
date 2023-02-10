@@ -4,15 +4,13 @@ import os
 
 # TO DO
 
-# write core parser and getter
 # write field parser and getter
 # put it all together
-# way to ignore blank cells? Google sheets call currently only returns to last cell in row
-    # could pad lists to same length?
-    # then remove blank values from dict after
-
-    # or could write new func note_param_exists and include that in every if idx line
 # Get delin from .ini
+# how to handle that if there is a url there has to be a file name? Params that are required together??
+# how to limit certain params to certain values
+# rewrite field_names_idx, there's got to be a better way?
+# do you need to supply a value for every field for a note type?
 
 DELIN = ','
 DEFAULT_DECK = 'Default'
@@ -21,7 +19,7 @@ AUDIO= ('.mp3','.ogg','.wav','.avi','.ogv','.mpg','.mpeg','.mov','.mp4')
 MOVIE= ('.mkv','.ogx','.ogv','.oga','.flv','.swf','.flac','.webp','.m4a')
 PICTURE= ('.jpg','.png','.gif','.tiff','.svg','.tif','.jpeg')
 
-def core_parser(header: list) -> tuple:
+def parse_core_idx(header: list) -> tuple:
     '''Returns idx for core params'''
     params = ('deckName','modelName')
 
@@ -46,7 +44,7 @@ def get_core(core_idx: list, note) -> dict:
 
     return core
 
-def parse_options_idx(header) -> list:
+def parse_options_idx(header: list) -> list:
     '''Returns idx for options params'''
     params = ('allowDuplicate','duplicateScope'
               ,'deckName','checkChildren','checkAllModels')
@@ -59,17 +57,17 @@ def get_options(options_idx: list, note):
     correct dictionary form'''
     options = {}
     (allowDup_idx, dupScope_idx, deckName_idx, checkChil_idx, checkAllMod_idx) = options_idx
-    if allowDup_idx and note_value_exists(note, allowDup_idx):
+    if allowDup_idx and value_exists(note, allowDup_idx):
         options["allowDuplicate"] = note[allowDup_idx]
-    if dupScope_idx and note_value_exists(note, dupScope_idx):
+    if dupScope_idx and value_exists(note, dupScope_idx):
         options["duplicateScope"] = note[dupScope_idx]
     if deckName_idx or checkChil_idx or checkAllMod_idx:
         options['duplicateScopeOptions'] = {}
-        if deckName_idx and note_value_exists(note, deckName_idx):
+        if deckName_idx and value_exists(note, deckName_idx):
             options['duplicateScopeOptions']['deckName'] = note[deckName_idx]
-        if checkChil_idx and note_value_exists(note, checkChil_idx):
+        if checkChil_idx and value_exists(note, checkChil_idx):
             options['duplicateScopeOptions']['checkChildren'] = note[checkChil_idx]
-        if checkAllMod_idx and note_value_exists(note, checkAllMod_idx):
+        if checkAllMod_idx and value_exists(note, checkAllMod_idx):
             options['duplicateScopeOptions']['checkAllModels'] = note[checkAllMod_idx]
 
     return options
@@ -122,9 +120,9 @@ def get_media(medias_idx: list, note) -> list:
         media['url'] = note[url_idx]
         media["filename"] = note[filename_idx]
         type_ = get_media_type(media["filename"])
-        if skipHash_idx and note_value_exists(note, skipHash_idx):
+        if skipHash_idx and value_exists(note, skipHash_idx):
             media["skipHash"] = note[skipHash_idx]
-        if fields_idx and note_value_exists(note, fields_idx):
+        if fields_idx and value_exists(note, fields_idx):
             media["fields"] = [field.strip() for field in note[fields_idx].split(DELIN)]
 
 
@@ -144,6 +142,37 @@ def get_media_type(file_name) -> str:
         return 'picture'
     pass
 
+def parse_fields_idx(header, core_idx, options_idx, media_idx):
+    '''Returns idx for options params.
+
+    These are not named.
+    All idx between core and media / options are field params.'''
+
+    # Get left idx based on how many core idx exists
+    left_idx = max([_ for _ in core_idx + [-1] if _ is not None]) + 1
+
+    # Get right idx. If no options or media_idx, set the right idx as the len of
+    # the header
+    right_idx = min([_ for _ in options_idx + sum(media_idx,[]) if _ is not None])
+    if right_idx:
+        right_idx
+    else:
+        right_idx = len(header)
+    return list(range(left_idx, right_idx))
+
+def get_field_names(header: list, fields_idx:list) -> list:
+    '''Returns a list of field names'''
+    field_names_idx = [header[idx] for idx in fields_idx]
+    return field_names_idx
+
+def get_fields(field_idx: list, field_names: list, note: list) -> dict:
+    '''Returns any field compenents of a single anki note in dictionary form'''
+    fields = {}
+    for name_idx, note_idx in enumerate(field_idx):
+        if value_exists(note, note_idx):
+            fields[field_names[name_idx]] = note[note_idx]
+    return fields
+
 def multi_param_idx_finder(header: list, params: tuple, start:int=0, end:int=0) -> list:
     '''Finds idx of a tuple of params'''
     idxs = []
@@ -151,14 +180,6 @@ def multi_param_idx_finder(header: list, params: tuple, start:int=0, end:int=0) 
         idxs.append(index_of(param, header, start, end))
     return idxs
 
-
-def fields_parser(headers, note):
-    #last_idx = skipHash_idx or filename_idx or url_idx
-    #first_idx = url_idx_2 or (len_-1)
-    #    if first_idx - last_idx > 1:
-    #        fields = note[last_idx+1: first_idx]
-    #        media[-1]["fields"] = fields
-    pass
 
 def index_of(note, list_, start=0, end=None):
     try:
@@ -170,7 +191,7 @@ def index_of(note, list_, start=0, end=None):
     except TypeError:
         return None
 
-def note_value_exists(note:list, idx: int) -> bool:
+def value_exists(note:list, idx: int) -> bool:
     try:
         val = note[idx]
         if val != '':
@@ -190,4 +211,15 @@ if __name__ == "__main__":
 
     media_idx = parse_media_idx(header)
     media = get_media(media_idx, notes[0])
-    print(media)
+
+    options_idx = parse_options_idx(header)
+    options = get_options(options_idx, notes[0])
+
+    core_idx = parse_core_idx(header)
+    core = get_core(core_idx, notes[0])
+    print(core)
+
+    fields_idx = parse_fields_idx(header, core_idx, options_idx, media_idx)
+    fields_names = get_field_names(header, fields_idx)
+    fields = get_fields(fields_idx, fields_names, notes[0])
+    print(fields)
