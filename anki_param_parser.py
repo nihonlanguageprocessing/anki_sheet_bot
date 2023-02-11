@@ -4,13 +4,10 @@ import os
 
 # TO DO
 
-# write field parser and getter
 # put it all together
 # Get delin from .ini
 # how to handle that if there is a url there has to be a file name? Params that are required together??
 # how to limit certain params to certain values
-# rewrite field_names_idx, there's got to be a better way?
-# do you need to supply a value for every field for a note type?
 
 DELIN = ','
 DEFAULT_DECK = 'Default'
@@ -33,11 +30,11 @@ def get_core(core_idx: list, note) -> dict:
     core = {}
 
     (deck_name_idx, model_name_idx) = core_idx
-    if deck_name_idx:
+    if deck_name_idx is not None and value_exists(note, deck_name_idx):
         core["deckName"] = note[deck_name_idx]
     else:
         core["deckName"] = DEFAULT_DECK
-    if model_name_idx:
+    if model_name_idx and value_exists(note, model_name_idx):
         core["modelName"] = note[model_name_idx]
     else:
         core["modelName"] = DEFAULT_MODEL
@@ -109,7 +106,7 @@ def get_media(medias_idx: list, note) -> list:
     correct dictionary form'''
     # Continues going through the header until all possible media components
     # have been exhausted.
-    medias = []
+    medias = {}
 
     for media_idx in medias_idx:
         media = {}
@@ -117,17 +114,21 @@ def get_media(medias_idx: list, note) -> list:
         (url_idx, filename_idx, skipHash_idx, fields_idx) = media_idx
 
         # add corresponding not values to dict
-        media['url'] = note[url_idx]
-        media["filename"] = note[filename_idx]
-        type_ = get_media_type(media["filename"])
+        if url_idx and value_exists(note, url_idx):
+            media["url"] = note[url_idx]
         if skipHash_idx and value_exists(note, skipHash_idx):
             media["skipHash"] = note[skipHash_idx]
         if fields_idx and value_exists(note, fields_idx):
             media["fields"] = [field.strip() for field in note[fields_idx].split(DELIN)]
+        if filename_idx and value_exists(note, filename_idx):
+            media["fileName"] = note[filename_idx]
+            type_ = get_media_type(media["filename"])
+            medias[type_] = media
+
 
 
         # append dict to list of medias
-        medias.append({'type': type_, 'media': media})
+
 
     return medias
 
@@ -171,7 +172,7 @@ def get_fields(field_idx: list, field_names: list, note: list) -> dict:
     for name_idx, note_idx in enumerate(field_idx):
         if value_exists(note, note_idx):
             fields[field_names[name_idx]] = note[note_idx]
-    return fields
+    return {"fields": fields}
 
 def multi_param_idx_finder(header: list, params: tuple, start:int=0, end:int=0) -> list:
     '''Finds idx of a tuple of params'''
@@ -201,6 +202,29 @@ def value_exists(note:list, idx: int) -> bool:
     except IndexError:
         return False
 
+def get_idx(header: list) -> list:
+    media_idx = parse_media_idx(header)
+    options_idx = parse_options_idx(header)
+    core_idx = parse_core_idx(header)
+    fields_idx = parse_fields_idx(header, core_idx, options_idx, media_idx)
+    fields_names = get_field_names(header, fields_idx)
+
+    return (media_idx, options_idx, core_idx, fields_idx, fields_names)
+
+def get_note(idx: tuple, note: list) -> dict:
+    (media_idx, options_idx, core_idx, fields_idx, fields_names) = idx
+
+    note_dict = {}
+
+    media = get_media(media_idx, note)
+    options = get_options(options_idx, note)
+    core = get_core(core_idx, note)
+    fields = get_fields(fields_idx, fields_names, note)
+
+    note_dict = core | fields | options | media
+
+    return note_dict
+
 if __name__ == "__main__":
     spreadsheet_id = '1Vh8IB6pyUSgff-SaTmsIrOsTlrL8-NQGtlil_FhOrIk'
     sheet_id_from = 64971627
@@ -209,17 +233,6 @@ if __name__ == "__main__":
 
     header, _, notes = google_sheets(service, get_anki_params, spreadsheet_id, sheet_id_from)
 
-    media_idx = parse_media_idx(header)
-    media = get_media(media_idx, notes[0])
-
-    options_idx = parse_options_idx(header)
-    options = get_options(options_idx, notes[0])
-
-    core_idx = parse_core_idx(header)
-    core = get_core(core_idx, notes[0])
-    print(core)
-
-    fields_idx = parse_fields_idx(header, core_idx, options_idx, media_idx)
-    fields_names = get_field_names(header, fields_idx)
-    fields = get_fields(fields_idx, fields_names, notes[0])
-    print(fields)
+    idx = get_idx(header)
+    note = get_note(idx, notes[0])
+    print(note)
