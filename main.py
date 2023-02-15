@@ -1,7 +1,7 @@
 from anki_param_parser import get_idx, get_note
 from google_sheet import get_anki_params, google_sheets
 from google_service import get_service
-from anki_api import invoke
+from anki_api import invoke, upload
 
 
 ## to do, create ability to read row 1, 1, return error message
@@ -15,19 +15,13 @@ if __name__ == '__main__':
 
     idx = get_idx(header)
 
-
+    results = []
     for note_ in notes:
         note = get_note(idx, note_)
-        try:
-            result = invoke('addNote', note=note)
-            print(result)
+        results.append(upload(note=note))
 
-        except Exception as e:
-            print(e)
-            print(notes)
-
-    result = invoke("sync")
-
+    #result = invoke("sync")
+    print(results)
 
 
 

@@ -20,6 +20,13 @@ def invoke(action, **params):
         raise Exception(response['error'])
     return response['result']
 
+def upload(note) -> tuple:
+    try:
+        invoke('addNote', note=note)
+        return (note, None)
+    except Exception as e:
+        return (note, e)
+
 if __name__ == "__main__":
     result = invoke('deckNames')
     print('got list of decks: {}'.format(result))
