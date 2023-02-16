@@ -23,9 +23,9 @@ def invoke(action, **params):
 def upload(note) -> tuple:
     try:
         invoke('addNote', note=note)
-        return (note, None)
+        return True
     except Exception as e:
-        return (note, e)
+        return e
 
 if __name__ == "__main__":
     result = invoke('deckNames')

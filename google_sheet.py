@@ -43,8 +43,8 @@ def del_values(service, spreadsheet_id, sheet_id, range_, values) -> None:
     pass
 
 def move_values(service, spreadsheet_id, sheet_id_from, sheet_id_to, range_, values) -> None:
-    google_sheets(service, write_values, spreadsheet_id, sheet_id_to, range_, values)
     google_sheets(service, del_values, spreadsheet_id, sheet_id_from, range_, values)
+    google_sheets(service, write_values, spreadsheet_id, sheet_id_to, range_, values)
     pass
 
 def get_sheetName(service, spreadsheet_id, sheet_id) -> str:
